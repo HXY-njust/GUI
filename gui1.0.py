@@ -14,6 +14,10 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QPalette, QColor, QFont, QPainter, QPen
 
+# 主题配置：'dark' 使用深色科技蓝主题，'light' 使用浅色科技蓝主题
+THEME_MODE = "dark"   # 改成 "light" 就能切换为浅色主题
+
+
 #Config
 # 你的 FastAPI 服务器地址
 # 如果是本地测试用 127.0.0.1，如果是远程服务器请填写真实 IP
@@ -201,7 +205,7 @@ class MainWindow(QMainWindow):
         left_layout.addWidget(prompt_group)
         prompt_layout = QVBoxLayout(prompt_group)
         self.prompt_edit = QTextEdit()
-        self.prompt_edit.setPlaceholderText("例如：Two people are boxing.")
+        self.prompt_edit.setPlaceholderText("例如：两个人正在跳舞/Two people are boxing.（支持多国语言输入）")
         prompt_layout.addWidget(self.prompt_edit)
 
         # 2. 生成参数
@@ -259,6 +263,16 @@ class MainWindow(QMainWindow):
         open_dir_btn = QPushButton("打开文件夹")
         open_dir_btn.clicked.connect(self._open_output_dir)
         btn_layout.addWidget(open_dir_btn)
+        # 主题切换按钮
+        self.theme_btn = QPushButton()
+        # 根据当前全局 THEME_MODE 设置按钮文字
+        if THEME_MODE == "dark":
+            self.theme_btn.setText("切换为浅色主题")
+        else:
+            self.theme_btn.setText("切换为深色主题")
+
+        self.theme_btn.clicked.connect(self._toggle_theme)
+        btn_layout.addWidget(self.theme_btn)
 
         # 右侧布局
         right_layout = QVBoxLayout()
@@ -355,6 +369,29 @@ class MainWindow(QMainWindow):
             except Exception as e:
                 QMessageBox.warning(self, "错误", str(e))
 
+    def _toggle_theme(self):
+        """切换深色 / 浅色主题，并立即应用到整个应用。"""
+        from PyQt5.QtWidgets import QApplication
+        app = QApplication.instance()
+        if app is None:
+            return
+
+        global THEME_MODE
+
+        if THEME_MODE == "dark":
+            # 切到浅色
+            THEME_MODE = "light"
+            apply_light_tech_theme(app)
+            self.theme_btn.setText("切换为深色主题")
+            self._log("已切换为浅色科技蓝主题")
+        else:
+            # 切到深色
+            THEME_MODE = "dark"
+            apply_dark_tech_theme(app)
+            self.theme_btn.setText("切换为浅色主题")
+            self._log("已切换为深色科技蓝主题")
+
+
     def _play_video_in_widget(self, file_path: str):
         abs_path = os.path.abspath(file_path)
         self._log(f"播放: {abs_path}")
@@ -411,76 +448,210 @@ class MainWindow(QMainWindow):
 
 # --------------------- 主题 (保留) -------------------------
 def apply_dark_tech_theme(app: QApplication):
+    # 仍然用 Fusion 样式，但颜色改成蓝灰科技风，避免纯黑带来的压抑感
     app.setStyle("Fusion")
     base_font = QFont("Microsoft YaHei", 10)
     app.setFont(base_font)
+
     palette = QPalette()
-    palette.setColor(QPalette.Window, QColor(18, 18, 18))
-    palette.setColor(QPalette.WindowText, Qt.white)
-    palette.setColor(QPalette.Base, QColor(24, 24, 24))
-    palette.setColor(QPalette.AlternateBase, QColor(18, 18, 18))
-    palette.setColor(QPalette.ToolTipBase, Qt.white)
-    palette.setColor(QPalette.ToolTipText, Qt.white)
-    palette.setColor(QPalette.Text, Qt.white)
-    palette.setColor(QPalette.Button, QColor(30, 30, 30))
-    palette.setColor(QPalette.ButtonText, Qt.white)
-    palette.setColor(QPalette.BrightText, Qt.red)
-    palette.setColor(QPalette.Highlight, QColor(0, 188, 212))
-    palette.setColor(QPalette.HighlightedText, Qt.black)
+
+    # 整体背景：深蓝灰，而不是纯黑
+    palette.setColor(QPalette.Window, QColor("#0b1120"))        # 主背景（深蓝）
+    palette.setColor(QPalette.AlternateBase, QColor("#020617")) # 表格交替底色
+
+    # 内容区 / 输入框背景：略浅一点，形成层次
+    palette.setColor(QPalette.Base, QColor("#111827"))          # 文本框、列表等
+    palette.setColor(QPalette.Button, QColor("#1f2937"))        # 按钮底色
+
+    # 文本颜色：偏冷的白色，减弱刺眼感
+    palette.setColor(QPalette.WindowText, QColor("#e5f2ff"))
+    palette.setColor(QPalette.Text, QColor("#e5f2ff"))
+    palette.setColor(QPalette.ButtonText, QColor("#e5f2ff"))
+    palette.setColor(QPalette.ToolTipBase, QColor("#e5f2ff"))
+    palette.setColor(QPalette.ToolTipText, QColor("#020617"))
+
+    # 高亮色：青蓝色，科技感强，但比纯青色柔和
+    palette.setColor(QPalette.Highlight, QColor("#22d3ee"))
+    palette.setColor(QPalette.HighlightedText, QColor("#020617"))
+
+    palette.setColor(QPalette.BrightText, QColor("#f97316"))  # 错误 / 强提示用橙色
+
     app.setPalette(palette)
+
+    # 统一控件样式
     app.setStyleSheet("""
-        QWidget { background-color: 
-            #121212; color: #f5f5f5; 
-            font-family: 
-            "Microsoft YaHei"; 
-            font-size: 20px; 
+        QWidget {
+            background-color: #0b1120;
+            color: #e5f2ff;
+            font-family: "Microsoft YaHei";
+            font-size: 20px;
         }
-            
-        QGroupBox { border: 1px solid #263238; 
+
+        QGroupBox {
+            border: 1px solid #1e293b;
             border-radius: 8px;
-            margin-top: 12px; 
-            padding-top: 10px; 
-            font-size: 20px;
-         }
-         
-        QGroupBox::title { subcontrol-origin: margin; 
-            left: 10px; 
-            padding: 0 6px; 
-            color: #00bcd4; 
-            font-weight: 600; 
+            margin-top: 12px;
+            padding-top: 10px;
             font-size: 20px;
         }
-        
-        QPushButton { border: 1px solid #00bcd4; 
-            border-radius: 4px; 
-            padding: 4px 10px; 
-            background-color: #1e1e1e; 
+
+        QGroupBox::title {
+            subcontrol-origin: margin;
+            left: 10px;
+            padding: 0 6px;
+            color: #38bdf8;           /* 标题高亮蓝 */
+            font-weight: 600;
             font-size: 20px;
         }
-        QPushButton:hover { background-color: #263238; }
-        QPushButton:pressed { background-color: #004d60; }
-        QPushButton:disabled { border-color: #455a64; color: #78909c; }
-        
-        QLineEdit, QTextEdit, QSpinBox { background-color: #1e1e1e; 
-            border: 1px solid #37474f; 
-            border-radius: 4px; 
-            padding: 2px 4px; 
+
+        QPushButton {
+            border: 1px solid #38bdf8;
+            border-radius: 4px;
+            padding: 4px 10px;
+            background-color: #1f2937; /* 比背景略亮一点 */
             font-size: 20px;
         }
-        
-        QLineEdit:focus, QTextEdit:focus, QSpinBox:focus { border: 1px solid #00bcd4; }
-        
-        QListWidget, QProgressBar { background-color: #1e1e1e; 
-            border: 1px solid #37474f; 
-            border-radius: 4px; 
+        QPushButton:hover {
+            background-color: #1e293b;
+        }
+        QPushButton:pressed {
+            background-color: #0ea5e9;
+        }
+        QPushButton:disabled {
+            border-color: #475569;
+            color: #64748b;
+        }
+
+        QLineEdit, QTextEdit, QSpinBox {
+            background-color: #111827;
+            border: 1px solid #1e293b;
+            border-radius: 4px;
+            padding: 2px 4px;
             font-size: 20px;
         }
-        QProgressBar::chunk { background-color: #00bcd4; }
+
+        QLineEdit:focus, QTextEdit:focus, QSpinBox:focus {
+            border: 1px solid #38bdf8;
+        }
+
+        QListWidget, QProgressBar {
+            background-color: #020617;
+            border: 1px solid #1e293b;
+            border-radius: 4px;
+            font-size: 20px;
+        }
+
+        QProgressBar::chunk {
+            background-color: #22d3ee;
+        }
     """)
+
+def apply_light_tech_theme(app: QApplication):
+    app.setStyle("Fusion")
+    base_font = QFont("Microsoft YaHei", 10)
+    app.setFont(base_font)
+
+    palette = QPalette()
+
+    # 整体背景：很浅的蓝灰，干净不刺眼
+    palette.setColor(QPalette.Window, QColor("#e5f0ff"))        # 主背景
+    palette.setColor(QPalette.AlternateBase, QColor("#dde7ff")) # 表格交替色
+
+    # 内容区 / 输入区：略深一点形成卡片效果
+    palette.setColor(QPalette.Base, QColor("#f3f6ff"))          # 文本输入背景
+    palette.setColor(QPalette.Button, QColor("#e0ebff"))        # 按钮背景
+
+    # 文本颜色：深灰蓝，可读性好
+    palette.setColor(QPalette.WindowText, QColor("#0f172a"))
+    palette.setColor(QPalette.Text, QColor("#0f172a"))
+    palette.setColor(QPalette.ButtonText, QColor("#0f172a"))
+    palette.setColor(QPalette.ToolTipBase, QColor("#0f172a"))
+    palette.setColor(QPalette.ToolTipText, QColor("#e5f0ff"))
+
+    # 高亮：偏亮的科技蓝
+    palette.setColor(QPalette.Highlight, QColor("#0ea5e9"))
+    palette.setColor(QPalette.HighlightedText, QColor("#f9fafb"))
+
+    palette.setColor(QPalette.BrightText, QColor("#dc2626"))    # 错误用红色更明显
+
+    app.setPalette(palette)
+
+    app.setStyleSheet("""
+        QWidget {
+            background-color: #e5f0ff;
+            color: #0f172a;
+            font-family: "Microsoft YaHei";
+            font-size: 10pt;
+        }
+
+        QGroupBox {
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            margin-top: 12px;
+            padding-top: 10px;
+            font-size: 10pt;
+            background-color: #f3f6ff;
+        }
+
+        QGroupBox::title {
+            subcontrol-origin: margin;
+            left: 10px;
+            padding: 0 6px;
+            color: #2563eb;       /* 标题蓝 */
+            font-weight: 600;
+        }
+
+        QPushButton {
+            border: 1px solid #2563eb;
+            border-radius: 4px;
+            padding: 4px 10px;
+            background-color: #e0ebff;
+            font-size: 10pt;
+        }
+        QPushButton:hover {
+            background-color: #d0e2ff;
+        }
+        QPushButton:pressed {
+            background-color: #60a5fa;
+        }
+        QPushButton:disabled {
+            border-color: #cbd5e1;
+            color: #94a3b8;
+            background-color: #e5e7eb;
+        }
+
+        QLineEdit, QTextEdit, QSpinBox {
+            background-color: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            padding: 2px 4px;
+            font-size: 10pt;
+        }
+
+        QLineEdit:focus, QTextEdit:focus, QSpinBox:focus {
+            border: 1px solid #2563eb;
+        }
+
+        QListWidget, QProgressBar {
+            background-color: #f3f6ff;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            font-size: 10pt;
+        }
+
+        QProgressBar::chunk {
+            background-color: #0ea5e9;
+        }
+    """)
+
 
 def main():
     app = QApplication(sys.argv)
-    apply_dark_tech_theme(app)
+    # 根据配置开关选择主题
+    if THEME_MODE == "light":
+        apply_light_tech_theme(app)
+    else:
+        apply_dark_tech_theme(app)
     window = MainWindow()
     window.show()
     sys.exit(app.exec_())
