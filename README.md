@@ -1,2 +1,2 @@
 # Challenge Cup
-"挑战杯GUI代码"
+"挑战杯代码"
