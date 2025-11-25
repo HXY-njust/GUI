@@ -430,45 +430,35 @@ class AnimatedBackgroundWidget(QWidget):
         painter.setRenderHint(QPainter.Antialiasing)
         rect = self.rect()
 
-        # 青蓝色渐变背景（更亮、更偏青）
-        base1 = QColor("#022c3a")  # 深青蓝（左侧/上侧）
-        base2 = QColor("#0ea5e9")  # 亮青蓝（右侧/下侧）
-        accent = QColor("#22d3ee")  # 高亮青蓝，用于中间的发光带和网格
+        # 柔和的青色 -> 蓝色渐变（无高亮、无呼吸动画）
+        # 颜色都偏中等亮度，过渡很平滑
+        color_cyan = QColor("#0288a8")  # 偏青
+        color_mid = QColor("#07a3c9")  # 青蓝过渡色
+        color_blue = QColor("#2563eb")  # 偏蓝
 
-        # 使用正弦函数做一个 0~1 的平滑因子，用来控制高亮强度
-        t = (math.sin(math.radians(self._phase)) + 1.0) / 2.0  # 0 ~ 1
-
-        # 渐变背景
         grad = QLinearGradient(0, 0, rect.width(), rect.height())
-        grad.setColorAt(0.0, base1)
-        # 中间的高亮带，透明度随 t 轻微变化
-        accent_color = QColor(accent)
-        accent_color.setAlphaF(0.20 + 0.25 * t)  # 0.20 ~ 0.45
-        grad.setColorAt(0.5, accent_color)
-        grad.setColorAt(1.0, base2)
+        grad.setColorAt(0.0, color_cyan)
+        grad.setColorAt(0.5, color_mid)
+        grad.setColorAt(1.0, color_blue)
 
         painter.fillRect(rect, QBrush(grad))
 
-        # 叠加一层很淡的网格线，增加科技感（像 HUD）
-        grid_color = QColor(accent)
-        grid_color.setAlpha(35)  # 非常淡
+        # 叠加一层非常淡的网格线，保持一点科技感但不会抢眼
+        grid_color = QColor(255, 255, 255)
+        grid_color.setAlpha(18)  # 很淡很柔和
         pen = QPen(grid_color)
         pen.setWidth(1)
         painter.setPen(pen)
 
         step = 80  # 网格间距
-        # 竖线
         x = 0
         while x < rect.width():
             painter.drawLine(x, 0, x, rect.height())
             x += step
-        # 横线
         y = 0
         while y < rect.height():
             painter.drawLine(0, y, rect.width(), y)
             y += step
-
-        # 不调用 super().paintEvent(event)，防止 QSS 再次覆盖背景
 
 
 class MainWindow(QMainWindow):
